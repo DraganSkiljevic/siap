@@ -5,11 +5,98 @@ import pandas as pd
 import numpy as np
 import pickle
 import time
+
+from scipy.linalg.tests.test_fblas import accuracy
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.naive_bayes import GaussianNB
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.model_selection import train_test_split
 from skmultilearn.adapt import MLkNN
 from scipy.sparse import csr_matrix, lil_matrix
-from sklearn.metrics import accuracy_score, hamming_loss, jaccard_score
+from sklearn.metrics import accuracy_score, hamming_loss, jaccard_score, f1_score
+from skmultilearn.problem_transform import BinaryRelevance, ClassifierChain
+
+def accuracy(test, predictions_new):
+    # accuracy
+
+    print("Accuracy score = ", accuracy_score(test, predictions_new))
+    print('Accuracy F1-score:', f1_score(test, predictions_new, average='micro'))
+    print("Accuracy hamming loss= ", hamming_loss(test, predictions_new))
+    print("Accuracy jaccard micro= ", jaccard_score(test, predictions_new, average='micro'))
+    print("Accuracy jaccard macro= ", jaccard_score(test, predictions_new, average='macro'))
+    print("Accuracy jaccard weighted= ", jaccard_score(test, predictions_new, average='weighted'))
+    print("Accuracy jaccard samples= ", jaccard_score(test, predictions_new, average='samples'))
+
+def randomForest():
+    print("Random forest classifier")
+
+    start = time.time()
+    classifier = BinaryRelevance(
+        classifier=RandomForestClassifier(),
+        require_dense=[False, True]
+    )
+    filename = "randomForest"
+
+    classifier.fit(train_x, train_y)
+
+    # save
+    pickle.dump(classifier, open(filename, 'wb'))
+
+    # load the model from disk
+    classifier = pickle.load(open(filename, 'rb'))
+
+    print('training time taken: ', round(time.time() - start, 0), 'seconds')
+
+    predictions_new = classifier.predict(test_x)
+
+    accuracy(test_y, predictions_new)
+
+
+def gaussianNaiveBayes():
+    print("Gaussian naive bayes")
+
+    start = time.time()
+    classifier = ClassifierChain(GaussianNB())
+
+    filename = "gaussianNaiveBayes"
+
+    classifier.fit(train_x, train_y)
+
+    # save
+    pickle.dump(classifier, open(filename, 'wb'))
+
+    # load the model from disk
+    classifier = pickle.load(open(filename, 'rb'))
+
+    print('training time taken: ', round(time.time() - start, 0), 'seconds')
+
+    predictions_new = classifier.predict(test_x)
+
+    accuracy(test_y, predictions_new)
+
+def randomForestClassifierChain():
+    print("Random forest classifier chain")
+
+    start = time.time()
+    classifier = ClassifierChain(
+        classifier=RandomForestClassifier(),
+        require_dense=[False, True]
+    )
+    filename = "randomForestClassifierChain"
+
+    # classifier.fit(train_x, train_y)
+
+    # save
+    # pickle.dump(classifier, open(filename, 'wb'))
+
+    # load the model from disk
+    classifier = pickle.load(open(filename, 'rb'))
+
+    print('training time taken: ', round(time.time() - start, 0), 'seconds')
+
+    predictions_new = classifier.predict(test_x)
+
+    accuracy(test_y, predictions_new)
 
 data_path = "data1.csv"
 data_raw = pd.read_csv(data_path)
@@ -53,6 +140,11 @@ print("klase")
 print(mlb.classes_)
 print(train_y)
 
+
+randomForestClassifierChain()
+#randomForest()
+# gaussianNaiveBayes()
+
 test_y = mlb.fit_transform(y_label_test)
 
 classifier_new = MLkNN(k=10)
@@ -77,13 +169,13 @@ print('training time taken: ', round(time.time() - start, 0), 'seconds')
 # predict
 predictions_new = loaded_model.predict(x_test)
 # accuracy
-print("Accuracy = ", accuracy_score(test_y, predictions_new))
-print("\n")
-print("Accuracy = ", hamming_loss(test_y, predictions_new))
-print("Accuracy = ", jaccard_score(test_y, predictions_new, average='micro'))
-print("Accuracy = ", jaccard_score(test_y, predictions_new, average='macro'))
-print("Accuracy = ", jaccard_score(test_y, predictions_new, average='weighted'))
-print("Accuracy = ", jaccard_score(test_y, predictions_new, average='samples'))
+# print("Accuracy = ", accuracy_score(test_y, predictions_new))
+# print("\n")
+# print("Accuracy = ", hamming_loss(test_y, predictions_new))
+# print("Accuracy = ", jaccard_score(test_y, predictions_new, average='micro'))
+# print("Accuracy = ", jaccard_score(test_y, predictions_new, average='macro'))
+# print("Accuracy = ", jaccard_score(test_y, predictions_new, average='weighted'))
+# print("Accuracy = ", jaccard_score(test_y, predictions_new, average='samples'))
 
 
 # print(predictions_new)
